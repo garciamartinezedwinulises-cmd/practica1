@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useAuthStore } from '../stores/auth'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const email = ref('')
 const password = ref('')
@@ -10,13 +10,16 @@ const loading = ref(false)
 
 const authStore = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 
 const handleLogin = async () => {
   errorMsg.value = ''
   loading.value = true
   try {
     await authStore.login({ email: email.value, password: password.value })
-    router.push('/dashboard')
+    
+    const redirectPath = (route.query.redirect as string) || '/admin'
+    router.push(redirectPath)
   } catch (err: any) {
     errorMsg.value = err.response?.data?.message || 'Error al iniciar sesión'
   } finally {

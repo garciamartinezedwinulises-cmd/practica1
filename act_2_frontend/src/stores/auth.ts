@@ -27,6 +27,15 @@ export const useAuthStore = defineStore('auth', {
       this.token = null
       this.user = null
       localStorage.removeItem('token')
+    },
+    async fetchUser() {
+      try {
+        const response = await axios.get('http://127.0.0.1:8000/api/me')
+        this.user = response.data
+      } catch (error) {
+        this.logout()
+        throw error
+      }
     }
   }
 })

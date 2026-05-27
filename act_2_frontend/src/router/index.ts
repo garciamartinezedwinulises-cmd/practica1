@@ -1,39 +1,76 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import LoginView from '../views/LoginView.vue'
-import RegisterView from '../views/RegisterView.vue'
-import DashboardView from '../views/DashboardView.vue'
+
+const routes = [
+  {
+    path: '/',
+    name: 'home',
+    component: () => import('../views/HomeView.vue')
+  },
+  {
+    path: '/catalogo',
+    name: 'catalogo',
+    component: () => import('../views/CatalogoView.vue')
+  },
+  {
+    path: '/catalogo/:id',
+    name: 'producto-detalle',
+    component: () => import('../views/ProductoDetalle.vue'),
+    props: true
+  },
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('../views/LoginView.vue')
+  },
+  {
+    path: '/register',
+    name: 'register',
+    component: () => import('../views/RegisterView.vue')
+  },
+  {
+    path: '/admin',
+    component: () => import('../layouts/AdminLayout.vue'),
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: '',
+        name: 'admin-dashboard',
+        component: () => import('../views/admin/Dashboard.vue')
+      },
+      {
+        path: 'productos',
+        name: 'admin-productos',
+        component: () => import('../views/admin/Productos.vue')
+      }
+    ]
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('../views/NotFound.vue')
+  }
+]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: '/login',
-      name: 'login',
-      component: LoginView
-    },
-    {
-      path: '/register',
-      name: 'register',
-      component: RegisterView
-    },
-    {
-      path: '/dashboard',
-      name: 'dashboard',
-      component: DashboardView,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/:pathMatch(.*)*',
-      redirect: '/login'
-    }
-  ]
+  routes
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore()
+
+  if (auth.token && !auth.user) {
+    try {
+      await auth.fetchUser()
+    } catch (error) {
+      auth.logout()
+      return { path: '/login' }
+    }
+  }
+
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return { name: 'login' }
+    return { path: '/login', query: { redirect: to.fullPath } }
   }
 })
 
