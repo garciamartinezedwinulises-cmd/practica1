@@ -1,11 +1,9 @@
-<script setup>
-import ProductosList from './components/ProductosList.vue';
+<script setup lang="ts">
+import { RouterView } from 'vue-router'
 </script>
 
 <template>
-  <main>
-    <ProductosList />
-  </main>
+  <RouterView />
 </template>
 
 <style>

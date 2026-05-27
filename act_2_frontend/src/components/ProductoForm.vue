@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue';
-import { createProducto, updateProducto } from '../services/productoService';
+import { createProducto, updateProducto } from '../services/productoService.ts';
 
 const props = defineProps({
   productoEdit: {

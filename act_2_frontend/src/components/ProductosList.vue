@@ -1,21 +1,22 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { getProductos, deleteProducto } from '../services/productoService';
+// @ts-ignore
 import ProductoForm from './ProductoForm.vue';
 
-const listaProductos = ref([]);
-const productoParaEditar = ref(null);
+const listaProductos = ref<any[]>([]);
+const productoParaEditar = ref<any>(null);
 
 async function obtenerLista() {
   try {
     const respuesta = await getProductos();
-    listaProductos.value = respuesta.data;
+    listaProductos.value = respuesta.data || respuesta;
   } catch (error) {
     alert('No se pudo conectar con el servidor para obtener los productos.');
   }
 }
 
-async function removerProducto(id) {
+async function removerProducto(id: number) {
   if (confirm('¿Estás seguro de que deseas eliminar este producto?')) {
     try {
       await deleteProducto(id);
@@ -29,7 +30,7 @@ async function removerProducto(id) {
   }
 }
 
-function seleccionarProducto(producto) {
+function seleccionarProducto(producto: any) {
   productoParaEditar.value = producto;
 }
 
