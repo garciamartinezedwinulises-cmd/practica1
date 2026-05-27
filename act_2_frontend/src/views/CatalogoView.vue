@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
+import { useCarritoStore } from '../stores/carrito'
+import CartIcon from '../components/CartIcon.vue'
 
 const productos = ref<any[]>([])
-const busqueda = ref('') 
-
+const busqueda = ref('')
+const carrito = useCarritoStore()
 
 const productosFiltrados = computed(() => {
   return productos.value.filter(p =>
-    p.nombre.toLowerCase().includes(busqueda.value.toLowerCase()) 
-  ) 
-}) 
+    p.nombre.toLowerCase().includes(busqueda.value.toLowerCase())
+  )
+})
 
 onMounted(async () => {
   try {
@@ -24,16 +26,17 @@ onMounted(async () => {
 
 <template>
   <div>
-    <nav style="background: #333; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+    <nav style="background: #333; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; font-family: Arial, sans-serif;">
       <span style="font-weight: bold; font-size: 18px;">Mi Tienda Online</span>
-      <div>
-        <router-link to="/" style="color: white; margin-right: 15px; text-decoration: none;">Inicio</router-link>
-        <router-link to="/catalogo" style="color: white; margin-right: 15px; text-decoration: none;">Catálogo</router-link>
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <router-link to="/" style="color: white; text-decoration: none;">Inicio</router-link>
+        <router-link to="/catalogo" style="color: white; text-decoration: none;">Catálogo</router-link>
         <router-link to="/login" style="color: #4ab3f4; text-decoration: none;">Administración</router-link>
+        <CartIcon />
       </div>
     </nav>
 
-    <div style="max-width: 1000px; margin: 40px auto; padding: 0 20px;">
+    <div style="max-width: 1000px; margin: 40px auto; padding: 0 20px; font-family: Arial, sans-serif;">
       <h2 style="color: #2c3e50; margin-bottom: 10px;">Nuestro Catálogo</h2>
       <p style="color: #7f8c8d; margin-bottom: 30px;">Explora la variedad de opciones disponibles en nuestra sucursal.</p>
 
@@ -52,11 +55,23 @@ onMounted(async () => {
             <h3 style="margin-top: 0; color: #2c3e50; font-size: 18px;">{{ producto.nombre }}</h3>
             <p style="color: #7f8c8d; font-size: 14px; margin-bottom: 15px;">{{ producto.descripcion || 'Sin descripción' }}</p>
           </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f2f5f8; padding-top: 15px;">
-            <span style="font-size: 18px; color: #2c3e50; font-weight: bold;">${{ Number(producto.precio).toFixed(2) }}</span>
-            <router-link :to="'/catalogo/' + producto.id" style="background: #4ab3f4; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 13px;">
-              Detalles
-            </router-link>
+          
+          <div style="display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #f2f5f8; padding-top: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 18px; color: #2c3e50; font-weight: bold;">${{ Number(producto.precio).toFixed(2) }}</span>
+              <router-link :to="'/catalogo/' + producto.id" style="color: #4ab3f4; text-decoration: none; font-size: 14px;">
+                Ver detalles →
+              </router-link>
+            </div>
+            
+            <button @click="carrito.agregar(producto)" style="background: #4ab3f4; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">
+              <template v-if="carrito.cantidadDeProducto(producto.id) > 0">
+                En carrito ({{ carrito.cantidadDeProducto(producto.id) }})
+              </template>
+              <template v-else>
+                Agregar al carrito
+              </template>
+            </button>
           </div>
         </div>
       </div>
