@@ -3,26 +3,34 @@
 namespace App\Http\Controllers;
 
 use App\Models\Producto;
+use App\Http\Resources\ProductoResource;
 use Illuminate\Http\Request;
 
 class ProductoController extends Controller
 {
     public function index()
     {
-        return response()->json(Producto::all(), 200);
+        return ProductoResource::collection(Producto::all());
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'nombre' => 'required|string|max:255',
             'descripcion' => 'nullable|string',
             'precio' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
+            'imagen' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        $producto = Producto::create($validated);
-        return response()->json($producto, 201);
+        $data = $request->except('imagen');
+
+        if ($request->hasFile('imagen')) {
+            $data['imagen'] = $request->file('imagen')->store('productos', 'public');
+        }
+        
+        $producto = Producto::create($data);
+        return new ProductoResource($producto);
     }
 
     public function show($id)
@@ -31,7 +39,7 @@ class ProductoController extends Controller
         if (!$producto) {
             return response()->json(['message' => 'Producto no encontrado'], 404);
         }
-        return response()->json($producto, 200);
+        return new ProductoResource($producto);
     }
 
     public function update(Request $request, $id)
@@ -41,15 +49,22 @@ class ProductoController extends Controller
             return response()->json(['message' => 'Producto no encontrado'], 404);
         }
 
-        $validated = $request->validate([
+        $request->validate([
             'nombre' => 'required|string|max:255',
             'descripcion' => 'nullable|string',
             'precio' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
+            'imagen' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        $producto->update($validated);
-        return response()->json($producto, 200);
+        $data = $request->except('imagen');
+
+        if ($request->hasFile('imagen')) {
+            $data['imagen'] = $request->file('imagen')->store('productos', 'public');
+        }
+
+        $producto->update($data);
+        return new ProductoResource($producto);
     }
 
     public function destroy($id)
