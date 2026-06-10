@@ -15,7 +15,16 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'rol',
     ];
+
+    public function esAdmin(): bool { 
+        return $this->rol === 'admin'; 
+    }
+
+    public function esEditor(): bool { 
+        return $this->rol === 'editor'; 
+    }
 
     protected $hidden = [
         'password',

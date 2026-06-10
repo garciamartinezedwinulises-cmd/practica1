@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Gate;
 
 class AuthController extends Controller
 {
@@ -64,6 +65,17 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
-        return response()->json($request->user(), 200);
+        $user = $request->user();
+        return response()->json([
+            'id'       => $user->id,
+            'name'     => $user->name,
+            'email'    => $user->email,
+            'rol'      => $user->rol,
+            'permisos' => [
+                'crear'    => \Illuminate\Support\Facades\Gate::allows('crear-producto'),
+                'editar'   => \Illuminate\Support\Facades\Gate::allows('editar-producto'),
+                'eliminar' => \Illuminate\Support\Facades\Gate::allows('eliminar-producto'),
+            ],
+        ]);
     }
 }
