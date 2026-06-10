@@ -1,58 +1,47 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import axios from 'axios'
+import { useFiltros } from '../composables/useFiltros'
 import { useCarritoStore } from '../stores/carrito'
 import CartIcon from '../components/CartIcon.vue'
+import FiltrosPanel from '../components/FiltrosPanel.vue'
+import PaginacionNav from '../components/PaginacionNav.vue'
 
-const productos = ref<any[]>([])
-const busqueda = ref('')
+const route = useRoute()
+const { filtros } = useFiltros()
 const carrito = useCarritoStore()
-const loading = ref(false)
 
-// Paginación reactiva de 10 artículos por página
-const paginaActual = ref(1)
-const itemsPorPagina = 10
+const resultado = ref<any>({ data: [], meta: {} })
+const cargando = ref(false)
 
-const productosFiltrados = computed(() => {
-  return productos.value.filter(p =>
-    p.nombre.toLowerCase().includes(busqueda.value.toLowerCase())
-  )
-})
+// Función para solicitar los productos paginados y filtrados al backend
+const cargarProductos = async () => {
+  cargando.value = true
+  try {
+    const { data } = await axios.get('http://127.0.0.1:8000/api/productos', {
+      params: {
+        busqueda:    filtros.busqueda,
+        categoria_id: filtros.categoria_id,
+        precio_min:  filtros.precio_min,
+        precio_max:  filtros.precio_max,
+        page:        filtros.pagina,
+        orden:       filtros.orden || 'nombre',
+        dir:         filtros.dir || 'asc'
+      }
 
-// Filtra el arreglo general para mostrar solo el bloque de la página activa
-const productosPaginados = computed(() => {
-  const inicio = (paginaActual.value - 1) * itemsPorPagina
-  const fin = inicio + itemsPorPagina
-  return productosFiltrados.value.slice(inicio, fin)
-})
-
-const totalPaginas = computed(() => {
-  return Math.ceil(productosFiltrados.value.length / itemsPorPagina) || 1
-})
-
-// Regresa a la página 1 si el usuario escribe en el buscador
-watch(busqueda, () => {
-  paginaActual.value = 1
-})
-
-const cambiarPagina = (pagina: number) => {
-  if (pagina >= 1 && pagina <= totalPaginas.value) {
-    paginaActual.value = pagina
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    })
+    resultado.value = data
+  } catch (error) {
+    console.error('Error al cargar los productos de la API:', error)
+  } finally {
+    cargando.value = false
   }
 }
 
-onMounted(async () => {
-  loading.value = true
-  try {
-    const response = await axios.get('http://127.0.0.1:8000/api/productos')
-    productos.value = response.data.data || response.data
-  } catch (error) {
-    console.error('Error al cargar el catálogo:', error)
-  } finally {
-    loading.value = false
-  }
-})
+// Observa la URL (?busqueda=...&p=...) y recarga los datos automáticamente
+watch(() => [filtros.orden, filtros.dir], cargarProductos)
+
 </script>
 
 <template>
@@ -67,78 +56,66 @@ onMounted(async () => {
       </div>
     </nav>
 
-    <div style="max-width: 1000px; margin: 40px auto; padding: 0 20px; font-family: Arial, sans-serif;">
-      <h2 style="color: #2c3e50; margin-bottom: 10px;">Nuestro Catálogo</h2>
-      <p style="color: #7f8c8d; margin-bottom: 30px;">Explora la variedad de opciones disponibles en nuestra sucursal.</p>
+    <div style="max-width: 1200px; margin: 40px auto; padding: 0 20px; font-family: Arial, sans-serif; display: grid; grid-template-columns: 280px 1fr; gap: 30px;">
+      
+      <aside>
+        <FiltrosPanel :filtros="filtros" />
+      </aside>
 
-      <div style="margin-bottom: 30px;">
-        <input 
-          type="text" 
-          v-model="busqueda" 
-          placeholder="Buscar producto por nombre..." 
-          style="width: 100%; max-width: 400px; padding: 10px 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 15px; box-sizing: border-box;"
-        />
-      </div>
+      <main>
+        <h2 style="color: #2c3e50; margin-top: 0; margin-bottom: 5px;">Catálogo Avanzado</h2>
+        <p style="color: #7f8c8d; margin-bottom: 25px;">Resultados totales del servidor: {{ resultado.meta?.total || 0 }} artículos.</p>
 
-      <div v-if="loading" style="text-align: center; color: #3498db; padding: 40px; font-size: 16px; font-weight: bold;">
-        Obteniendo productos desde el servidor...
-      </div>
+        <div v-if="cargando" style="text-align: center; color: #3498db; padding: 60px; font-size: 16px; font-weight: bold;">
+          Buscando en el servidor...
+        </div>
 
-      <div v-else>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-          <div v-for="producto in productosPaginados" :key="producto.id" style="background: white; border: 1px solid #e1e8ed; padding: 20px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between;">
-            <div>
-              <div style="width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; background: #fafafa; border-radius: 6px; margin-bottom: 15px; overflow: hidden; border: 1px solid #f1f2f6;">
-                <img 
-                  :src="producto.imagen_url || 'https://via.placeholder.com/150?text=Sin+Imagen'" 
-                  :alt="producto.nombre"
-                  style="max-width: 100%; max-height: 100%; object-fit: contain;"
-                  @error="(e) => { (e.target as HTMLInputElement).src = 'https://via.placeholder.com/150?text=Sin+Imagen' }"
-                />
-              </div>
+        <div v-else>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px;">
+            <div v-for="producto in resultado.data" :key="producto.id" style="background: white; border: 1px solid #e1e8ed; padding: 20px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="width: 100%; height: 140px; display: flex; align-items: center; justify-content: center; background: #fafafa; border-radius: 6px; margin-bottom: 15px; overflow: hidden; border: 1px solid #f1f2f6;">
+                  <img 
+                    :src="producto.imagen_url && producto.imagen_url !== 'http://127.0.0.1:8000/storage/' ? producto.imagen_url : 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'150\' height=\'150\' viewBox=\'0 0 150 150\'><rect width=\'100%\' height=\'100%\' fill=\'%23f1f2f6\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'Arial\' font-size=\'14\' fill=\'%237f8c8d\'>Sin Imagen</text></svg>'" 
+                    :alt="producto.nombre"
+                    style="max-width: 100%; max-height: 100%; object-fit: contain;"
+                  />
+                </div>
 
-              <h3 style="margin-top: 0; color: #2c3e50; font-size: 18px;">{{ producto.nombre }}</h3>
-              <p style="color: #7f8c8d; font-size: 14px; margin-bottom: 15px;">{{ producto.descripcion || 'Sin descripción' }}</p>
-            </div>
-            
-            <div style="display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #f2f5f8; padding-top: 15px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 18px; color: #2c3e50; font-weight: bold;">${{ Number(producto.precio).toFixed(2) }}</span>
-                <router-link :to="'/catalogo/' + producto.id" style="color: #4ab3f4; text-decoration: none; font-size: 14px;">
-                  Ver detalles →
-                </router-link>
+                <h3 style="margin-top: 0; color: #2c3e50; font-size: 16px; margin-bottom: 5px;">{{ producto.nombre }}</h3>
+                <span style="font-size: 12px; background: #f1f2f6; padding: 3px 8px; border-radius: 10px; color: #7f8c8d; display: inline-block; margin-bottom: 10px;">
+                  {{ producto.categoria?.nombre || 'General' }}
+                </span>
+                <p style="color: #7f8c8d; font-size: 13px; margin-bottom: 15px; line-height: 1.4;">{{ producto.descripcion || 'Sin descripción' }}</p>
               </div>
               
-              <button @click="carrito.agregar(producto)" style="background: #4ab3f4; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">
-                <template v-if="carrito.cantidadDeProducto(producto.id) > 0">
-                  En carrito ({{ carrito.cantidadDeProducto(producto.id) }})
-                </template>
-                <template v-else>
-                  Agregar al carrito
-                </template>
-              </button>
+              <div style="display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #f2f5f8; padding-top: 15px;">
+                <span style="font-size: 18px; color: #2c3e50; font-weight: bold;">${{ Number(producto.precio).toFixed(2) }}</span>
+                <button @click="carrito.agregar(producto)" style="background: #4ab3f4; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">
+                  <template v-if="carrito.cantidadDeProducto(producto.id) > 0">
+                    En carrito ({{ carrito.cantidadDeProducto(producto.id) }})
+                  </template>
+                  <template v-else>
+                    Agregar al carrito
+                  </template>
+                </button>
+              </div>
             </div>
           </div>
+
+          <div v-if="resultado.data?.length === 0" style="text-align: center; color: #7f8c8d; padding: 40px; font-size: 16px;">
+            Ningún producto coincide con los filtros aplicados.
+          </div>
+
+          <div style="margin-top: 40px;">
+            <PaginacionNav 
+              :meta="resultado.meta" 
+              @cambio-pagina="filtros.pagina = $event" 
+            />
+          </div>
         </div>
+      </main>
 
-        <div v-if="totalPaginas > 1" style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 40px;">
-          <button @click="cambiarPagina(paginaActual - 1)" :disabled="paginaActual === 1" style="padding: 8px 12px; border: 1px solid #ccc; background: white; border-radius: 4px; cursor: pointer;">
-            Anterior
-          </button>
-          
-          <span style="font-size: 14px; color: #2c3e50;">
-            Página {{ paginaActual }} de {{ totalPaginas }}
-          </span>
-
-          <button @click="cambiarPagina(paginaActual + 1)" :disabled="paginaActual === totalPaginas" style="padding: 8px 12px; border: 1px solid #ccc; background: white; border-radius: 4px; cursor: pointer;">
-            Siguiente
-          </button>
-        </div>
-      </div>
-
-      <div v-if="productosFiltrados.length === 0 && productos.length > 0 && !loading" style="text-align: center; color: #7f8c8d; margin-top: 40px; font-size: 16px;">
-        No se encontraron productos que coincidan con tu búsqueda.
-      </div>
     </div>
   </div>
 </template>

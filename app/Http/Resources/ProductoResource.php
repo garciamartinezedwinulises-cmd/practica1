@@ -16,6 +16,7 @@ class ProductoResource extends JsonResource
             'precio' => (float) $this->precio,
             'stock' => (int) $this->stock,
             'imagen_url' => $this->imagen ? asset('storage/' . $this->imagen) : null,
+            'categoria' => new CategoriaResource($this->whenLoaded('categoria')),
             'created_at' => $this->created_at,
         ];
     }

@@ -27,7 +27,8 @@ const handleRegister = async () => {
       password: password.value,
       password_confirmation: password_confirmation.value
     })
-    router.push('/dashboard')
+    // CORRECCIÓN: Apuntamos a la ruta raíz del panel de administración
+    router.push('/admin')
   } catch (err: any) {
     errorMsg.value = err.response?.data?.message || 'Error en el registro'
   } finally {
