@@ -1,14 +1,42 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+import axios from 'axios'
 import { useCarritoStore } from '../stores/carrito'
 import { useRouter } from 'vue-router'
+import PedidoEstado from '../components/PedidoEstado.vue' // Importación correcta según tus carpetas
 
 const carrito = useCarritoStore()
 const router = useRouter()
 
-const finalizarCompra = () => {
-  alert('¡Compra realizada con éxito! Tu pedido ha sido procesado.')
-  carrito.vaciar()
-  router.push('/')
+// Variables reactivas para el control de la Práctica 11
+const pedidoIdCreado = ref<number | null>(null)
+const mostrarMonitoreo = ref(false)
+
+const finalizarCompra = async () => {
+  try {
+  
+    const itemsParaEnviar = carrito.items.map((item: any) => ({
+      producto_id: item.id,
+      cantidad: item.cantidad,
+      precio: item.precio
+    }))
+
+   
+    const { data } = await axios.post('http://127.0.0.1:8000/api/pedidos', {
+      items: itemsParaEnviar
+    })
+
+   
+    pedidoIdCreado.value = data.pedido_id
+    mostrarMonitoreo.value = true
+
+    // 4. Vaciamos tu store con tu método original
+    carrito.vaciar()
+
+  } catch (error) {
+    console.error('Error al procesar la compra:', error)
+    alert('Hubo un problema de conexión al procesar tu orden de compra.')
+  }
 }
 
 const confirmarVaciar = () => {
@@ -32,7 +60,16 @@ const confirmarVaciar = () => {
     <div style="max-width: 800px; margin: 40px auto; padding: 0 20px; font-family: Arial, sans-serif;">
       <h2>Tu Carrito de Compras</h2>
 
-      <div v-if="carrito.items.length === 0" style="text-align: center; padding: 40px; color: #7f8c8d; border: 1px dashed #ccc; border-radius: 8px;">
+      <div v-if="mostrarMonitoreo && pedidoIdCreado">
+        <PedidoEstado :pedidoId="pedidoIdCreado" />
+        <div style="text-align: center; margin-top: 25px;">
+          <button @click="router.push('/')" style="background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;">
+            Volver a la Página de Inicio
+          </button>
+        </div>
+      </div>
+
+      <div v-else-if="carrito.items.length === 0" style="text-align: center; padding: 40px; color: #7f8c8d; border: 1px dashed #ccc; border-radius: 8px;">
         <p style="font-size: 16px;">No has agregado ningún producto al carrito todavía.</p>
         <router-link to="/catalogo" style="color: #4ab3f4; text-decoration: none; font-weight: bold;">
           Volver al catálogo para explorar artículos

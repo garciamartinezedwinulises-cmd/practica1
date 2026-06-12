@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import axios from 'axios'
 import { useAuthStore } from '../../stores/auth'
+import AdminNotificaciones from '../../components/AdminNotificaciones.vue' // 📡 PRÁCTICA 12: Importación del escudo de alertas [cite: 108-110]
 
 const authStore = useAuthStore()
 const productos = ref<any[]>([])
@@ -128,6 +129,8 @@ onMounted(() => {
 
 <template>
   <div style="padding: 20px; font-family: Arial, sans-serif;">
+    
+    <AdminNotificaciones />
     
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid #eee; padding-bottom: 15px;">
       <div>

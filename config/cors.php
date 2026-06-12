@@ -15,7 +15,8 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    // 📡 Añadimos 'broadcasting/auth' para que el middleware de CORS intercepte la ruta de Reverb
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'broadcasting/auth'],
 
     'allowed_methods' => ['*'],
 
@@ -29,6 +30,7 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    // 🔑 Cambiamos a true para autorizar el paso seguro de cabeceras de autenticación (Bearer Tokens)
+    'supports_credentials' => true,
 
 ];

@@ -6,9 +6,13 @@ use App\Models\Producto;
 use App\Http\Resources\ProductoResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use OpenApi\Attributes as OA; // 🔑 Importación obligatoria para los atributos
 
 class ProductoController extends Controller
 {
+    #[OA\Get(path: '/api/v1/productos', summary: 'Obtener el catálogo completo de productos', tags: ['Productos'])]
+    #[OA\Response(response: 200, description: 'Catálogo recuperado con éxito')]
+    #[OA\Response(response: 500, description: 'Error interno del servidor')]
     public function index(Request $request)
     {
         $productos = Producto::with('categoria')
@@ -21,10 +25,15 @@ class ProductoController extends Controller
         return ProductoResource::collection($productos);
     }
 
+    #[OA\Post(path: '/api/v1/productos', summary: 'Crear un nuevo producto', tags: ['Productos'], security: [['bearerAuth' => []]])]
+    #[OA\Response(response: 201, description: 'Producto creado con éxito')]
+    #[OA\Response(response: 401, description: 'No autenticado')]
+    #[OA\Response(response: 403, description: 'No tienes los permisos requeridos')]
+    #[OA\Response(response: 422, description: 'Error de validación')]
     public function store(Request $request)
     {
         Gate::authorize('create', Producto::class);
-        
+
         $request->validate([
             'nombre' => 'required|string|max:255',
             'descripcion' => 'nullable|string',
@@ -43,6 +52,10 @@ class ProductoController extends Controller
         return new ProductoResource($producto);
     }
 
+    #[OA\Get(path: '/api/v1/productos/{id}', summary: 'Obtener el detalle de un producto', tags: ['Productos'])]
+    #[OA\Parameter(name: 'id', in: 'path', description: 'ID del producto', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'Producto encontrado con éxito')]
+    #[OA\Response(response: 404, description: 'Producto no encontrado')]
     public function show($id)
     {
         $producto = Producto::find($id);
@@ -52,6 +65,11 @@ class ProductoController extends Controller
         return new ProductoResource($producto);
     }
 
+    #[OA\Put(path: '/api/v1/productos/{id}', summary: 'Actualizar un producto existente', tags: ['Productos'], security: [['bearerAuth' => []]])]
+    #[OA\Parameter(name: 'id', in: 'path', description: 'ID del producto', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'Producto actualizado con éxito')]
+    #[OA\Response(response: 404, description: 'Producto no encontrado')]
+    #[OA\Response(response: 422, description: 'Error de validación')]
     public function update(Request $request, $id)
     {
         $producto = Producto::find($id);
@@ -79,11 +97,15 @@ class ProductoController extends Controller
         return new ProductoResource($producto);
     }
 
+    #[OA\Delete(path: '/api/v1/productos/{id}', summary: 'Eliminar un producto', tags: ['Productos'], security: [['bearerAuth' => []]])]
+    #[OA\Parameter(name: 'id', in: 'path', description: 'ID del producto', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'Producto eliminado con éxito')]
+    #[OA\Response(response: 404, description: 'Producto no encontrado')]
     public function destroy($id)
     {
         $producto = Producto::find($id);
         if (!$producto) {
-            return response()->json(['message' => 'Producto no encountered'], 404);
+            return response()->json(['message' => 'Producto no encontrado'], 404);
         }
 
         Gate::authorize('delete', $producto);
